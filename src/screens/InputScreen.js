@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { calculateFOB, saveCostSheet } from '../utils/calculations';
 
 const InputScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
@@ -28,22 +28,55 @@ const InputScreen = ({ navigation }) => {
         setFormData({ ...formData, [name]: value });
     };
 
+    const handleNumericChange = (name, value) => {
+        // Allow empty string, just a minus sign, or ending with a decimal point
+        if (value === '' || value === '-' || value === '.' || /^-?\d*\.?\d*$/.test(value)) {
+            setFormData({ ...formData, [name]: value });
+        }
+    };
+
     const handleCalculate = async () => {
+        // Validate all numeric fields
+        const numericFields = [
+            'gsm', 'body_length', 'sleeve_length', 'chest_width', 'wastage_percent',
+            'yarn_price_per_kg', 'knitting_charge_per_kg', 'dyeing_charge_per_kg',
+            'aop_print_cost_per_doz', 'accessories_cost_per_doz', 'cm_cost_per_doz',
+            'commercial_cost_percent', 'profit_margin_percent'
+        ];
+
+        // Convert string values to numbers and validate
+        const cleanedData = { ...formData };
+        for (const field of numericFields) {
+            const value = formData[field];
+            if (value === '' || value === '-' || value === '.') {
+                Alert.alert("Invalid Input", `Please enter a valid number for all fields.`);
+                return;
+            }
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                Alert.alert("Invalid Input", `Please enter a valid number for all fields.`);
+                return;
+            }
+            cleanedData[field] = numValue;
+        }
+
         setLoading(true);
         try {
-            // Using USB Debugging (adb reverse)
-            const apiUrl = 'http://127.0.0.1:8000/api/cost-sheets/calculate/';
-            const response = await axios.post(apiUrl, formData);
+            // Calculate locally with cleaned numeric data
+            const breakdown = calculateFOB(cleanedData);
+
+            // Save to local storage
+            await saveCostSheet(cleanedData, breakdown);
 
             setLoading(false);
             navigation.navigate('Result', {
-                result: response.data,
-                inputs: formData
+                breakdown,
+                inputs: cleanedData
             });
         } catch (error) {
             setLoading(false);
             console.error(error);
-            Alert.alert("Error", "Failed to calculate. Check backend connection.");
+            Alert.alert("Error", "Calculation failed. Please check your inputs.");
         }
     };
 
@@ -72,30 +105,30 @@ const InputScreen = ({ navigation }) => {
                 <View style={styles.row}>
                     <TextInput
                         style={[styles.input, { flex: 1 }]}
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                         value={String(formData.gsm)}
-                        onChangeText={t => handleChange('gsm', Number(t))}
+                        onChangeText={t => handleNumericChange('gsm', t)}
                     />
                 </View>
 
                 <View style={styles.row}>
                     <View style={{ flex: 1, marginRight: 5 }}>
                         <Text>Body Len (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.body_length)} onChangeText={t => handleChange('body_length', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.body_length)} onChangeText={t => handleNumericChange('body_length', t)} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 5 }}>
                         <Text>Chest (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.chest_width)} onChangeText={t => handleChange('chest_width', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.chest_width)} onChangeText={t => handleNumericChange('chest_width', t)} />
                     </View>
                 </View>
                 <View style={styles.row}>
                     <View style={{ flex: 1, marginRight: 5 }}>
                         <Text>Sleeve Len (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.sleeve_length)} onChangeText={t => handleChange('sleeve_length', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.sleeve_length)} onChangeText={t => handleNumericChange('sleeve_length', t)} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 5 }}>
                         <Text>Wastage %</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.wastage_percent)} onChangeText={t => handleChange('wastage_percent', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.wastage_percent)} onChangeText={t => handleNumericChange('wastage_percent', t)} />
                     </View>
                 </View>
             </View>
@@ -105,15 +138,15 @@ const InputScreen = ({ navigation }) => {
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text>Yarn $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.yarn_price_per_kg)} onChangeText={t => handleChange('yarn_price_per_kg', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.yarn_price_per_kg)} onChangeText={t => handleNumericChange('yarn_price_per_kg', t)} />
                     </View>
                     <View style={styles.col}>
                         <Text>Knit $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.knitting_charge_per_kg)} onChangeText={t => handleChange('knitting_charge_per_kg', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.knitting_charge_per_kg)} onChangeText={t => handleNumericChange('knitting_charge_per_kg', t)} />
                     </View>
                     <View style={styles.col}>
                         <Text>Dye $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.dyeing_charge_per_kg)} onChangeText={t => handleChange('dyeing_charge_per_kg', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.dyeing_charge_per_kg)} onChangeText={t => handleNumericChange('dyeing_charge_per_kg', t)} />
                     </View>
                 </View>
 
@@ -121,15 +154,15 @@ const InputScreen = ({ navigation }) => {
                 <View style={styles.row}>
                     <View style={styles.col}>
                         <Text>AOP</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.aop_print_cost_per_doz)} onChangeText={t => handleChange('aop_print_cost_per_doz', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.aop_print_cost_per_doz)} onChangeText={t => handleNumericChange('aop_print_cost_per_doz', t)} />
                     </View>
                     <View style={styles.col}>
                         <Text>Accessories</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.accessories_cost_per_doz)} onChangeText={t => handleChange('accessories_cost_per_doz', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.accessories_cost_per_doz)} onChangeText={t => handleNumericChange('accessories_cost_per_doz', t)} />
                     </View>
                     <View style={styles.col}>
                         <Text>CM</Text>
-                        <TextInput style={styles.input} keyboardType="numeric" value={String(formData.cm_cost_per_doz)} onChangeText={t => handleChange('cm_cost_per_doz', Number(t))} />
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.cm_cost_per_doz)} onChangeText={t => handleNumericChange('cm_cost_per_doz', t)} />
                     </View>
                 </View>
             </View>
@@ -137,6 +170,11 @@ const InputScreen = ({ navigation }) => {
             <TouchableOpacity style={styles.button} onPress={handleCalculate} disabled={loading}>
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>CALCULATE FOB</Text>}
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.historyButton} onPress={() => navigation.navigate('History')}>
+                <Text style={styles.historyButtonText}>View History</Text>
+            </TouchableOpacity>
+
             <View style={{ height: 50 }} />
         </ScrollView>
     );
@@ -153,6 +191,8 @@ const styles = StyleSheet.create({
     col: { flex: 1, marginHorizontal: 2 },
     button: { backgroundColor: '#007bff', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
     buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    historyButton: { backgroundColor: '#6c757d', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+    historyButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
 export default InputScreen;

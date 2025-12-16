@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import HistoryScreen from './src/screens/HistoryScreen';
 import InputScreen from './src/screens/InputScreen';
 import ResultScreen from './src/screens/ResultScreen';
 
@@ -18,6 +19,11 @@ export default function App() {
           name="Result"
           component={ResultScreen}
           options={{ title: 'Cost Breakdown' }}
+        />
+        <Stack.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ title: 'Calculation History' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

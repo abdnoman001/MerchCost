@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const ResultScreen = ({ route }) => {
-    const { result, inputs } = route.params;
-    const breakdown = result.breakdown;
+    const { breakdown, inputs } = route.params;
 
     // Initial profit margin from inputs
     const [profitMargin, setProfitMargin] = useState(inputs.profit_margin_percent);
