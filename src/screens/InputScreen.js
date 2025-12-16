@@ -31,9 +31,9 @@ const InputScreen = ({ navigation }) => {
     const handleCalculate = async () => {
         setLoading(true);
         try {
-                        // Using USB Debugging (adb reverse)
-                        const apiUrl = 'http://127.0.0.1:8000/api/cost-sheets/calculate/';
-                        const response = await axios.post(apiUrl, formData);
+            // Using USB Debugging (adb reverse)
+            const apiUrl = 'http://127.0.0.1:8000/api/cost-sheets/calculate/';
+            const response = await axios.post(apiUrl, formData);
 
             setLoading(false);
             navigation.navigate('Result', {
@@ -60,23 +60,23 @@ const InputScreen = ({ navigation }) => {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Fabric Parameters</Text>
                 <Text>Fabric Type</Text>
-        {/* Temporary replacement for Picker */}
-        <TextInput 
-            style={styles.input} 
-            placeholder="e.g. Single Jersey" 
-            value={formData.fabric_type} 
-            onChangeText={t => handleChange('fabric_type', t)} 
-        />
+                {/* Temporary replacement for Picker */}
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Single Jersey"
+                    value={formData.fabric_type}
+                    onChangeText={t => handleChange('fabric_type', t)}
+                />
 
-        <Text>GSM: {formData.gsm}</Text>
-        <View style={styles.row}>
-          <TextInput 
-            style={[styles.input, { flex: 1 }]} 
-            keyboardType="numeric" 
-            value={String(formData.gsm)} 
-            onChangeText={t => handleChange('gsm', Number(t))} 
-          />
-        </View>
+                <Text>GSM: {formData.gsm}</Text>
+                <View style={styles.row}>
+                    <TextInput
+                        style={[styles.input, { flex: 1 }]}
+                        keyboardType="numeric"
+                        value={String(formData.gsm)}
+                        onChangeText={t => handleChange('gsm', Number(t))}
+                    />
+                </View>
 
                 <View style={styles.row}>
                     <View style={{ flex: 1, marginRight: 5 }}>
