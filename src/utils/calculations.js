@@ -34,9 +34,9 @@ const calculateTshirtFOB = (inputs) => {
         yarn_price_per_kg,
         knitting_charge_per_kg,
         dyeing_charge_per_kg,
-        aop_print_cost_per_doz,
-        accessories_cost_per_doz,
-        cm_cost_per_doz,
+        aop_print_cost_per_pc = 0,
+        accessories_cost_per_pc = 0,
+        cm_cost_per_pc = 0,
         washing_cost_per_pc = 0,
         commercial_cost_per_pc = 0,
         testing_cost_per_pc = 0,
@@ -62,33 +62,28 @@ const calculateTshirtFOB = (inputs) => {
     );
     const fabric_cost_per_doz = fabric_rate_per_kg * total_fabric_req;
 
-    // Step D: Total Cost per Doz (including per-piece costs converted to per-doz)
-    const washing_cost_per_doz = washing_cost_per_pc * 12;
-    const commercial_cost_per_doz = commercial_cost_per_pc * 12;
-    const testing_cost_per_doz = testing_cost_per_pc * 12;
-
-    const total_cost_per_doz = (
-        fabric_cost_per_doz +
-        aop_print_cost_per_doz +
-        accessories_cost_per_doz +
-        cm_cost_per_doz +
-        washing_cost_per_doz +
-        commercial_cost_per_doz +
-        testing_cost_per_doz
+    // Step D: Total Cost per Piece (all costs already in per-piece)
+    const fabric_cost_per_pc = fabric_cost_per_doz / 12;
+    const total_cost_per_pc = (
+        fabric_cost_per_pc +
+        aop_print_cost_per_pc +
+        accessories_cost_per_pc +
+        cm_cost_per_pc +
+        washing_cost_per_pc +
+        commercial_cost_per_pc +
+        testing_cost_per_pc
     );
 
     // Step E: Final FOB per Pc (add profit margin)
-    const cost_with_profit = total_cost_per_doz * (1 + (profit_margin_percent / 100.0));
-    const fob_per_pc = cost_with_profit / 12.0;
+    const final_fob_per_pc = total_cost_per_pc * (1 + (profit_margin_percent / 100.0));
 
     return {
         garment_type: 'T-Shirt (Knit)',
         basic_consumption_kg_doz: parseFloat(basic_consumption.toFixed(4)),
         total_fabric_req_kg_doz: parseFloat(total_fabric_req.toFixed(4)),
-        fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
-        total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
-        cost_with_profit_per_doz: parseFloat(cost_with_profit.toFixed(2)),
-        final_fob_per_pc: parseFloat(fob_per_pc.toFixed(2))
+        fabric_cost_per_pc: parseFloat(fabric_cost_per_pc.toFixed(2)),
+        total_cost_per_pc: parseFloat(total_cost_per_pc.toFixed(2)),
+        final_fob_per_pc: parseFloat(final_fob_per_pc.toFixed(2))
     };
 };
 
@@ -107,9 +102,9 @@ const calculateShirtFOB = (inputs) => {
         shirt_wastage_percent,
         shirt_fabric_allowance = 2, // Default 2" if not provided
         fabric_price_per_yard,
-        aop_print_cost_per_doz,
-        accessories_cost_per_doz,
-        cm_cost_per_doz,
+        aop_print_cost_per_pc = 0,
+        accessories_cost_per_pc = 0,
+        cm_cost_per_pc = 0,
         washing_cost_per_pc = 0,
         commercial_cost_per_pc = 0,
         testing_cost_per_pc = 0,
@@ -134,36 +129,30 @@ const calculateShirtFOB = (inputs) => {
     // Calculate for dozen
     const yards_per_doz = yards_with_wastage * 12;
 
-    // Fabric cost
-    const fabric_cost_per_doz = yards_per_doz * fabric_price_per_yard;
+    // Fabric cost per piece
+    const fabric_cost_per_pc = yards_with_wastage * fabric_price_per_yard;
 
-    // Total cost per doz (including per-piece costs converted to per-doz)
-    const washing_cost_per_doz = washing_cost_per_pc * 12;
-    const commercial_cost_per_doz = commercial_cost_per_pc * 12;
-    const testing_cost_per_doz = testing_cost_per_pc * 12;
-
-    const total_cost_per_doz = (
-        fabric_cost_per_doz +
-        aop_print_cost_per_doz +
-        accessories_cost_per_doz +
-        cm_cost_per_doz +
-        washing_cost_per_doz +
-        commercial_cost_per_doz +
-        testing_cost_per_doz
+    // Total cost per piece (all costs already in per-piece)
+    const total_cost_per_pc = (
+        fabric_cost_per_pc +
+        aop_print_cost_per_pc +
+        accessories_cost_per_pc +
+        cm_cost_per_pc +
+        washing_cost_per_pc +
+        commercial_cost_per_pc +
+        testing_cost_per_pc
     );
 
     // Final FOB (add profit margin)
-    const cost_with_profit = total_cost_per_doz * (1 + (profit_margin_percent / 100.0));
-    const fob_per_pc = cost_with_profit / 12.0;
+    const final_fob_per_pc = total_cost_per_pc * (1 + (profit_margin_percent / 100.0));
 
     return {
         garment_type: 'Woven Shirt',
         basic_consumption_yards_piece: parseFloat(yards_per_piece.toFixed(3)),
         total_fabric_req_yards_doz: parseFloat(yards_per_doz.toFixed(2)),
-        fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
-        total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
-        cost_with_profit_per_doz: parseFloat(cost_with_profit.toFixed(2)),
-        final_fob_per_pc: parseFloat(fob_per_pc.toFixed(2))
+        fabric_cost_per_pc: parseFloat(fabric_cost_per_pc.toFixed(2)),
+        total_cost_per_pc: parseFloat(total_cost_per_pc.toFixed(2)),
+        final_fob_per_pc: parseFloat(final_fob_per_pc.toFixed(2))
     };
 };
 
@@ -184,9 +173,9 @@ const calculateJeansFOB = (inputs) => {
         jeans_wastage_percent,
         jeans_fabric_allowance = 2, // Default 2" if not provided
         fabric_price_per_yard,
-        aop_print_cost_per_doz,
-        accessories_cost_per_doz,
-        cm_cost_per_doz,
+        aop_print_cost_per_pc = 0,
+        accessories_cost_per_pc = 0,
+        cm_cost_per_pc = 0,
         washing_cost_per_pc = 0,
         commercial_cost_per_pc = 0,
         testing_cost_per_pc = 0,
@@ -209,36 +198,30 @@ const calculateJeansFOB = (inputs) => {
     // Calculate for dozen
     const yards_per_doz = yards_with_wastage * 12;
 
-    // Fabric cost
-    const fabric_cost_per_doz = yards_per_doz * fabric_price_per_yard;
+    // Fabric cost per piece
+    const fabric_cost_per_pc = yards_with_wastage * fabric_price_per_yard;
 
-    // Total cost per doz (including per-piece costs converted to per-doz)
-    const washing_cost_per_doz = washing_cost_per_pc * 12;
-    const commercial_cost_per_doz = commercial_cost_per_pc * 12;
-    const testing_cost_per_doz = testing_cost_per_pc * 12;
-
-    const total_cost_per_doz = (
-        fabric_cost_per_doz +
-        aop_print_cost_per_doz +
-        accessories_cost_per_doz +
-        cm_cost_per_doz +
-        washing_cost_per_doz +
-        commercial_cost_per_doz +
-        testing_cost_per_doz
+    // Total cost per piece (all costs already in per-piece)
+    const total_cost_per_pc = (
+        fabric_cost_per_pc +
+        aop_print_cost_per_pc +
+        accessories_cost_per_pc +
+        cm_cost_per_pc +
+        washing_cost_per_pc +
+        commercial_cost_per_pc +
+        testing_cost_per_pc
     );
 
     // Final FOB (add profit margin)
-    const cost_with_profit = total_cost_per_doz * (1 + (profit_margin_percent / 100.0));
-    const fob_per_pc = cost_with_profit / 12.0;
+    const final_fob_per_pc = total_cost_per_pc * (1 + (profit_margin_percent / 100.0));
 
     return {
         garment_type: 'Denim Jeans',
         basic_consumption_yards_piece: parseFloat(yards_per_piece.toFixed(3)),
         total_fabric_req_yards_doz: parseFloat(yards_per_doz.toFixed(2)),
-        fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
-        total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
-        cost_with_profit_per_doz: parseFloat(cost_with_profit.toFixed(2)),
-        final_fob_per_pc: parseFloat(fob_per_pc.toFixed(2))
+        fabric_cost_per_pc: parseFloat(fabric_cost_per_pc.toFixed(2)),
+        total_cost_per_pc: parseFloat(total_cost_per_pc.toFixed(2)),
+        final_fob_per_pc: parseFloat(final_fob_per_pc.toFixed(2))
     };
 };
 
