@@ -1,10 +1,29 @@
 /**
  * FOB Calculation Logic
- * Ported from Django backend to run locally in React Native
+ * Supports multiple garment types: T-Shirt (Knit), Woven Shirt, Denim Jeans
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const calculateFOB = (inputs) => {
+    const garmentType = inputs.garment_type || 'tshirt';
+
+    if (garmentType === 'tshirt') {
+        return calculateTshirtFOB(inputs);
+    } else if (garmentType === 'shirt') {
+        return calculateShirtFOB(inputs);
+    } else if (garmentType === 'jeans') {
+        return calculateJeansFOB(inputs);
+    }
+
+    // Default to t-shirt calculation
+    return calculateTshirtFOB(inputs);
+};
+
+/**
+ * T-Shirt (Knit) FOB Calculation
+ * Formula: ((Body_Len + Sleeve_Len + Allowance) * (Chest + Allowance) * 2 * GSM * 12) / 10,000,000
+ */
+const calculateTshirtFOB = (inputs) => {
     const {
         body_length,
         sleeve_length,
@@ -21,21 +40,18 @@ export const calculateFOB = (inputs) => {
         profit_margin_percent,
     } = inputs;
 
-    // Step A: Basic Consumption
-    // Formula: ((Body_Len + Sleeve_Len + 3cm_allowance) * (Chest + 3cm_allowance) * 2 * GSM * 12) / 10,000,000
-    const length_with_allowance = body_length + sleeve_length + 3.0;
-    const width_with_allowance = chest_width + 3.0;
+    // Step A: Basic Consumption (Kg/Doz)
+    const length_with_allowance = body_length + sleeve_length + 4.0; // 4cm allowance
+    const width_with_allowance = chest_width + 3.0; // 3cm allowance
 
     const basic_consumption = (
         length_with_allowance * width_with_allowance * 2 * gsm * 12
     ) / 10000000.0;
 
-    // Step B: Total Fabric Req
-    // Basic Consumption + Wastage %
+    // Step B: Total Fabric Req with Wastage
     const total_fabric_req = basic_consumption * (1 + (wastage_percent / 100.0));
 
     // Step C: Fabric Cost per Doz
-    // (Yarn Price + Knitting + Dyeing) * Total Fabric Req
     const fabric_rate_per_kg = (
         yarn_price_per_kg +
         knitting_charge_per_kg +
@@ -44,7 +60,6 @@ export const calculateFOB = (inputs) => {
     const fabric_cost_per_doz = fabric_rate_per_kg * total_fabric_req;
 
     // Step D: Total Cost per Doz
-    // Fabric Cost + AOP + Accessories + CM
     const total_cost_per_doz = (
         fabric_cost_per_doz +
         aop_print_cost_per_doz +
@@ -53,18 +68,146 @@ export const calculateFOB = (inputs) => {
     );
 
     // Step E: Final FOB per Pc
-    // 1. Add Commercial Cost %
     const cost_with_commercial = total_cost_per_doz * (1 + (commercial_cost_percent / 100.0));
-
-    // 2. Add Profit Margin %
     const final_cost_with_profit = cost_with_commercial * (1 + (profit_margin_percent / 100.0));
-
-    // 3. Divide by 12 to get Price Per Piece
     const fob_per_pc = final_cost_with_profit / 12.0;
 
     return {
+        garment_type: 'T-Shirt (Knit)',
         basic_consumption_kg_doz: parseFloat(basic_consumption.toFixed(4)),
         total_fabric_req_kg_doz: parseFloat(total_fabric_req.toFixed(4)),
+        fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
+        total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
+        cost_with_commercial_per_doz: parseFloat(cost_with_commercial.toFixed(2)),
+        final_fob_per_pc: parseFloat(fob_per_pc.toFixed(2))
+    };
+};
+
+/**
+ * Woven Shirt FOB Calculation
+ * Formula: Consumption (Yds/Doz) = ((Body + Sleeve + Allowance) / Fabric Width) * 12
+ * Standard: ~1.60-1.70 yards per piece for L/S shirt
+ */
+const calculateShirtFOB = (inputs) => {
+    const {
+        shirt_body_length,
+        shirt_sleeve_length,
+        shirt_chest_width,
+        shirt_collar,
+        fabric_width,
+        shirt_wastage_percent,
+        fabric_price_per_yard,
+        aop_print_cost_per_doz,
+        accessories_cost_per_doz,
+        cm_cost_per_doz,
+        commercial_cost_percent,
+        profit_margin_percent,
+    } = inputs;
+
+    // Calculate total length needed
+    const body_with_allowance = shirt_body_length + 2; // 2" allowance
+    const sleeve_with_allowance = shirt_sleeve_length + 2; // 2" allowance
+    const total_length = body_with_allowance + sleeve_with_allowance;
+
+    // Calculate yards per piece
+    // Convert inches to yards (divide by 36)
+    let yards_per_piece = total_length / 36;
+
+    // Add extra for collar, cuffs, pockets (~0.15 yards)
+    yards_per_piece += 0.15;
+
+    // Add wastage
+    const yards_with_wastage = yards_per_piece * (1 + (shirt_wastage_percent / 100.0));
+
+    // Calculate for dozen
+    const yards_per_doz = yards_with_wastage * 12;
+
+    // Fabric cost
+    const fabric_cost_per_doz = yards_per_doz * fabric_price_per_yard;
+
+    // Total cost per doz
+    const total_cost_per_doz = (
+        fabric_cost_per_doz +
+        aop_print_cost_per_doz +
+        accessories_cost_per_doz +
+        cm_cost_per_doz
+    );
+
+    // Final FOB
+    const cost_with_commercial = total_cost_per_doz * (1 + (commercial_cost_percent / 100.0));
+    const final_cost_with_profit = cost_with_commercial * (1 + (profit_margin_percent / 100.0));
+    const fob_per_pc = final_cost_with_profit / 12.0;
+
+    return {
+        garment_type: 'Woven Shirt',
+        basic_consumption_yards_piece: parseFloat(yards_per_piece.toFixed(3)),
+        total_fabric_req_yards_doz: parseFloat(yards_per_doz.toFixed(2)),
+        fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
+        total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
+        cost_with_commercial_per_doz: parseFloat(cost_with_commercial.toFixed(2)),
+        final_fob_per_pc: parseFloat(fob_per_pc.toFixed(2))
+    };
+};
+
+/**
+ * Denim Jeans FOB Calculation
+ * Formula: Outseam length + allowances, fit within fabric width
+ * Standard: ~1.37-1.44 yards per pair
+ */
+const calculateJeansFOB = (inputs) => {
+    const {
+        waist,
+        inseam,
+        thigh_width,
+        front_rise,
+        back_rise,
+        leg_opening,
+        denim_fabric_width,
+        jeans_wastage_percent,
+        fabric_price_per_yard,
+        aop_print_cost_per_doz,
+        accessories_cost_per_doz,
+        cm_cost_per_doz,
+        commercial_cost_percent,
+        profit_margin_percent,
+    } = inputs;
+
+    // Calculate total side length (outseam)
+    const average_rise = (front_rise + back_rise) / 2;
+    const total_length = inseam + average_rise + 2; // 2" for hemming
+
+    // Convert to yards
+    let yards_per_piece = total_length / 36;
+
+    // Add for pockets, waistband, loops (~0.15 yards)
+    yards_per_piece += 0.15;
+
+    // Add wastage
+    const yards_with_wastage = yards_per_piece * (1 + (jeans_wastage_percent / 100.0));
+
+    // Calculate for dozen
+    const yards_per_doz = yards_with_wastage * 12;
+
+    // Fabric cost
+    const fabric_cost_per_doz = yards_per_doz * fabric_price_per_yard;
+
+    // Total cost per doz
+    const total_cost_per_doz = (
+        fabric_cost_per_doz +
+        aop_print_cost_per_doz +
+        accessories_cost_per_doz +
+        cm_cost_per_doz
+    );
+
+    // Final FOB
+    const cost_with_commercial = total_cost_per_doz * (1 + (commercial_cost_percent / 100.0));
+    const final_cost_with_profit = cost_with_commercial * (1 + (profit_margin_percent / 100.0));
+    const fob_per_pc = final_cost_with_profit / 12.0;
+
+    return {
+        garment_type: 'Denim Jeans',
+        basic_consumption_yards_piece: parseFloat(yards_per_piece.toFixed(3)),
+        total_fabric_req_yards_doz: parseFloat(yards_per_doz.toFixed(2)),
         fabric_cost_per_doz: parseFloat(fabric_cost_per_doz.toFixed(2)),
         total_cost_per_doz: parseFloat(total_cost_per_doz.toFixed(2)),
         cost_with_commercial_per_doz: parseFloat(cost_with_commercial.toFixed(2)),

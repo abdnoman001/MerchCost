@@ -4,25 +4,55 @@ import { calculateFOB, saveCostSheet } from '../utils/calculations';
 
 const InputScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
+    const [garmentType, setGarmentType] = useState('tshirt'); // tshirt, shirt, jeans
     const [formData, setFormData] = useState({
         style_name: 'Style-001',
         buyer_name: 'Buyer-A',
         season: 'Summer 24',
+        garment_type: 'tshirt',
+
+        // T-Shirt (Knit) specific
         fabric_type: 'Single Jersey',
         gsm: 160,
-        body_length: 70,
-        sleeve_length: 22,
-        chest_width: 52,
+        body_length: 72,
+        sleeve_length: 24,
+        chest_width: 54,
         wastage_percent: 10,
+
+        // Shirt (Woven) specific
+        shirt_body_length: 30, // inches
+        shirt_sleeve_length: 25, // inches
+        shirt_chest_width: 22, // inches
+        shirt_collar: 16, // inches
+        fabric_width: 60, // inches
+        shirt_wastage_percent: 5,
+
+        // Jeans (Woven) specific
+        waist: 34, // inches
+        inseam: 32, // inches
+        thigh_width: 12, // inches
+        front_rise: 11, // inches
+        back_rise: 15, // inches
+        leg_opening: 8, // inches
+        denim_fabric_width: 60, // inches
+        jeans_wastage_percent: 5,
+
+        // Common costs
         yarn_price_per_kg: 4.5,
         knitting_charge_per_kg: 0.5,
         dyeing_charge_per_kg: 1.2,
+        fabric_price_per_yard: 3.5, // For woven fabrics
         aop_print_cost_per_doz: 0,
         accessories_cost_per_doz: 2.0,
         cm_cost_per_doz: 12.0,
         commercial_cost_percent: 3.0,
         profit_margin_percent: 15.0,
     });
+
+    const handleGarmentTypeChange = (type) => {
+        setGarmentType(type);
+        setFormData({ ...formData, garment_type: type });
+    };
 
     const handleChange = (name, value) => {
         setFormData({ ...formData, [name]: value });
@@ -36,13 +66,22 @@ const InputScreen = ({ navigation }) => {
     };
 
     const handleCalculate = async () => {
-        // Validate all numeric fields
-        const numericFields = [
-            'gsm', 'body_length', 'sleeve_length', 'chest_width', 'wastage_percent',
-            'yarn_price_per_kg', 'knitting_charge_per_kg', 'dyeing_charge_per_kg',
+        // Define numeric fields based on garment type
+        let numericFields = [
             'aop_print_cost_per_doz', 'accessories_cost_per_doz', 'cm_cost_per_doz',
             'commercial_cost_percent', 'profit_margin_percent'
         ];
+
+        if (garmentType === 'tshirt') {
+            numericFields.push('gsm', 'body_length', 'sleeve_length', 'chest_width', 'wastage_percent',
+                'yarn_price_per_kg', 'knitting_charge_per_kg', 'dyeing_charge_per_kg');
+        } else if (garmentType === 'shirt') {
+            numericFields.push('shirt_body_length', 'shirt_sleeve_length', 'shirt_chest_width',
+                'shirt_collar', 'fabric_width', 'shirt_wastage_percent', 'fabric_price_per_yard');
+        } else if (garmentType === 'jeans') {
+            numericFields.push('waist', 'inseam', 'thigh_width', 'front_rise', 'back_rise',
+                'leg_opening', 'denim_fabric_width', 'jeans_wastage_percent', 'fabric_price_per_yard');
+        }
 
         // Convert string values to numbers and validate
         const cleanedData = { ...formData };
@@ -82,7 +121,7 @@ const InputScreen = ({ navigation }) => {
 
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.header}>MerchMate Costing</Text>
+            <Text style={styles.header}>MerchCost</Text>
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Style Info</Text>
@@ -90,70 +129,188 @@ const InputScreen = ({ navigation }) => {
                 <TextInput style={styles.input} placeholder="Buyer Name" value={formData.buyer_name} onChangeText={t => handleChange('buyer_name', t)} />
             </View>
 
+            {/* Garment Type Selector */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Fabric Parameters</Text>
-                <Text>Fabric Type</Text>
-                {/* Temporary replacement for Picker */}
-                <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Single Jersey"
-                    value={formData.fabric_type}
-                    onChangeText={t => handleChange('fabric_type', t)}
-                />
+                <Text style={styles.sectionTitle}>Garment Type</Text>
+                <View style={styles.garmentTypeContainer}>
+                    <TouchableOpacity
+                        style={[styles.typeButton, garmentType === 'tshirt' && styles.typeButtonActive]}
+                        onPress={() => handleGarmentTypeChange('tshirt')}
+                    >
+                        <Text style={[styles.typeButtonText, garmentType === 'tshirt' && styles.typeButtonTextActive]}>T-Shirt (Knit)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.typeButton, garmentType === 'shirt' && styles.typeButtonActive]}
+                        onPress={() => handleGarmentTypeChange('shirt')}
+                    >
+                        <Text style={[styles.typeButtonText, garmentType === 'shirt' && styles.typeButtonTextActive]}>Woven Shirt</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.typeButton, garmentType === 'jeans' && styles.typeButtonActive]}
+                        onPress={() => handleGarmentTypeChange('jeans')}
+                    >
+                        <Text style={[styles.typeButtonText, garmentType === 'jeans' && styles.typeButtonTextActive]}>Denim Jeans</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
 
-                <Text>GSM: {formData.gsm}</Text>
-                <View style={styles.row}>
+            {/* T-Shirt Fields */}
+            {garmentType === 'tshirt' && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>T-Shirt Dimensions (cm)</Text>
+                    <Text>Fabric Type</Text>
                     <TextInput
-                        style={[styles.input, { flex: 1 }]}
+                        style={styles.input}
+                        placeholder="e.g. Single Jersey"
+                        value={formData.fabric_type}
+                        onChangeText={t => handleChange('fabric_type', t)}
+                    />
+
+                    <Text>GSM (Fabric Weight)</Text>
+                    <TextInput
+                        style={styles.input}
                         keyboardType="decimal-pad"
                         value={String(formData.gsm)}
                         onChangeText={t => handleNumericChange('gsm', t)}
                     />
-                </View>
 
-                <View style={styles.row}>
-                    <View style={{ flex: 1, marginRight: 5 }}>
-                        <Text>Body Len (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.body_length)} onChangeText={t => handleNumericChange('body_length', t)} />
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Body Length (cm)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.body_length)} onChangeText={t => handleNumericChange('body_length', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Chest Width (cm)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.chest_width)} onChangeText={t => handleNumericChange('chest_width', t)} />
+                        </View>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 5 }}>
-                        <Text>Chest (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.chest_width)} onChangeText={t => handleNumericChange('chest_width', t)} />
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Sleeve Length (cm)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.sleeve_length)} onChangeText={t => handleNumericChange('sleeve_length', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Wastage %</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.wastage_percent)} onChangeText={t => handleNumericChange('wastage_percent', t)} />
+                        </View>
                     </View>
-                </View>
-                <View style={styles.row}>
-                    <View style={{ flex: 1, marginRight: 5 }}>
-                        <Text>Sleeve Len (cm)</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.sleeve_length)} onChangeText={t => handleNumericChange('sleeve_length', t)} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 5 }}>
-                        <Text>Wastage %</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.wastage_percent)} onChangeText={t => handleNumericChange('wastage_percent', t)} />
-                    </View>
-                </View>
-            </View>
 
+                    <Text style={styles.sectionTitle}>Knit Fabric Costs (USD/kg)</Text>
+                    <View style={styles.row}>
+                        <View style={styles.col}>
+                            <Text>Yarn $/kg</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.yarn_price_per_kg)} onChangeText={t => handleNumericChange('yarn_price_per_kg', t)} />
+                        </View>
+                        <View style={styles.col}>
+                            <Text>Knit $/kg</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.knitting_charge_per_kg)} onChangeText={t => handleNumericChange('knitting_charge_per_kg', t)} />
+                        </View>
+                        <View style={styles.col}>
+                            <Text>Dye $/kg</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.dyeing_charge_per_kg)} onChangeText={t => handleNumericChange('dyeing_charge_per_kg', t)} />
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {/* Woven Shirt Fields */}
+            {garmentType === 'shirt' && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Woven Shirt Dimensions (inches)</Text>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Body Length (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_body_length)} onChangeText={t => handleNumericChange('shirt_body_length', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Chest Width (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_chest_width)} onChangeText={t => handleNumericChange('shirt_chest_width', t)} />
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Sleeve Length (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_sleeve_length)} onChangeText={t => handleNumericChange('shirt_sleeve_length', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Collar Size (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_collar)} onChangeText={t => handleNumericChange('shirt_collar', t)} />
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Fabric Width (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.fabric_width)} onChangeText={t => handleNumericChange('fabric_width', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Wastage %</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_wastage_percent)} onChangeText={t => handleNumericChange('shirt_wastage_percent', t)} />
+                        </View>
+                    </View>
+
+                    <Text style={styles.sectionTitle}>Woven Fabric Cost</Text>
+                    <Text>Fabric Price ($/Yard)</Text>
+                    <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.fabric_price_per_yard)} onChangeText={t => handleNumericChange('fabric_price_per_yard', t)} />
+                </View>
+            )}
+
+            {/* Denim Jeans Fields */}
+            {garmentType === 'jeans' && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Denim Jeans Dimensions (inches)</Text>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Waist (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.waist)} onChangeText={t => handleNumericChange('waist', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Inseam (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.inseam)} onChangeText={t => handleNumericChange('inseam', t)} />
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Thigh Width (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.thigh_width)} onChangeText={t => handleNumericChange('thigh_width', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Front Rise (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.front_rise)} onChangeText={t => handleNumericChange('front_rise', t)} />
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Back Rise (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.back_rise)} onChangeText={t => handleNumericChange('back_rise', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Leg Opening (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.leg_opening)} onChangeText={t => handleNumericChange('leg_opening', t)} />
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1, marginRight: 5 }}>
+                            <Text>Denim Width (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.denim_fabric_width)} onChangeText={t => handleNumericChange('denim_fabric_width', t)} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 5 }}>
+                            <Text>Wastage %</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.jeans_wastage_percent)} onChangeText={t => handleNumericChange('jeans_wastage_percent', t)} />
+                        </View>
+                    </View>
+
+                    <Text style={styles.sectionTitle}>Denim Fabric Cost</Text>
+                    <Text>Fabric Price ($/Yard)</Text>
+                    <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.fabric_price_per_yard)} onChangeText={t => handleNumericChange('fabric_price_per_yard', t)} />
+                </View>
+            )}
+
+            {/* Common Costs Section */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Costs (USD)</Text>
+                <Text style={styles.sectionTitle}>Other Costs (per Dozen)</Text>
                 <View style={styles.row}>
                     <View style={styles.col}>
-                        <Text>Yarn $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.yarn_price_per_kg)} onChangeText={t => handleNumericChange('yarn_price_per_kg', t)} />
-                    </View>
-                    <View style={styles.col}>
-                        <Text>Knit $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.knitting_charge_per_kg)} onChangeText={t => handleNumericChange('knitting_charge_per_kg', t)} />
-                    </View>
-                    <View style={styles.col}>
-                        <Text>Dye $/kg</Text>
-                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.dyeing_charge_per_kg)} onChangeText={t => handleNumericChange('dyeing_charge_per_kg', t)} />
-                    </View>
-                </View>
-
-                <Text>Other Costs (per Doz)</Text>
-                <View style={styles.row}>
-                    <View style={styles.col}>
-                        <Text>AOP</Text>
+                        <Text>AOP/Print</Text>
                         <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.aop_print_cost_per_doz)} onChangeText={t => handleNumericChange('aop_print_cost_per_doz', t)} />
                     </View>
                     <View style={styles.col}>
@@ -161,7 +318,7 @@ const InputScreen = ({ navigation }) => {
                         <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.accessories_cost_per_doz)} onChangeText={t => handleNumericChange('accessories_cost_per_doz', t)} />
                     </View>
                     <View style={styles.col}>
-                        <Text>CM</Text>
+                        <Text>CM Cost</Text>
                         <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.cm_cost_per_doz)} onChangeText={t => handleNumericChange('cm_cost_per_doz', t)} />
                     </View>
                 </View>
@@ -186,9 +343,13 @@ const styles = StyleSheet.create({
     section: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 15, elevation: 2 },
     sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#444' },
     input: { borderWidth: 1, borderColor: '#ddd', padding: 10, borderRadius: 5, marginBottom: 10, backgroundColor: '#fafafa' },
-    pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: 5, marginBottom: 10 },
     row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
     col: { flex: 1, marginHorizontal: 2 },
+    garmentTypeContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+    typeButton: { flex: 1, padding: 12, marginHorizontal: 3, borderRadius: 8, borderWidth: 2, borderColor: '#007bff', backgroundColor: '#fff' },
+    typeButtonActive: { backgroundColor: '#007bff' },
+    typeButtonText: { color: '#007bff', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+    typeButtonTextActive: { color: '#fff' },
     button: { backgroundColor: '#007bff', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
     buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     historyButton: { backgroundColor: '#6c757d', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 10 },
