@@ -23,10 +23,10 @@ const ResultScreen = ({ route }) => {
         if (isNaN(margin)) {
             return; // Don't update if invalid
         }
-        
-        // Formula: (CostWithCommercial * (1 + Profit/100)) / 12
-        const costWithComm = breakdown.cost_with_commercial_per_doz;
-        const newFinalCost = costWithComm * (1 + (margin / 100.0));
+
+        // Formula: (Total Cost * (1 + Profit/100)) / 12
+        const totalCost = breakdown.total_cost_per_doz;
+        const newFinalCost = totalCost * (1 + (margin / 100.0));
         const newFob = newFinalCost / 12.0;
         setFinalFob(newFob);
     }, [profitMargin]);

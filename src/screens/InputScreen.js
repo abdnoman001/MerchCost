@@ -18,6 +18,7 @@ const InputScreen = ({ navigation }) => {
         sleeve_length: 24,
         chest_width: 54,
         wastage_percent: 10,
+        fabric_allowance: 4, // cm for knit
 
         // Shirt (Woven) specific
         shirt_body_length: 30, // inches
@@ -26,6 +27,7 @@ const InputScreen = ({ navigation }) => {
         shirt_collar: 16, // inches
         fabric_width: 60, // inches
         shirt_wastage_percent: 5,
+        shirt_fabric_allowance: 2, // inches for woven
 
         // Jeans (Woven) specific
         waist: 34, // inches
@@ -36,6 +38,7 @@ const InputScreen = ({ navigation }) => {
         leg_opening: 8, // inches
         denim_fabric_width: 60, // inches
         jeans_wastage_percent: 5,
+        jeans_fabric_allowance: 2, // inches for denim
 
         // Common costs
         yarn_price_per_kg: 4.5,
@@ -45,7 +48,9 @@ const InputScreen = ({ navigation }) => {
         aop_print_cost_per_doz: 0,
         accessories_cost_per_doz: 2.0,
         cm_cost_per_doz: 12.0,
-        commercial_cost_percent: 3.0,
+        washing_cost_per_pc: 0.5, // Washing/Finishing cost per piece
+        commercial_cost_per_pc: 0.8, // Commercial & Export cost per piece
+        testing_cost_per_pc: 0.3, // Testing & Inspection cost per piece
         profit_margin_percent: 15.0,
     });
 
@@ -69,18 +74,22 @@ const InputScreen = ({ navigation }) => {
         // Define numeric fields based on garment type
         let numericFields = [
             'aop_print_cost_per_doz', 'accessories_cost_per_doz', 'cm_cost_per_doz',
-            'commercial_cost_percent', 'profit_margin_percent'
+            'washing_cost_per_pc', 'commercial_cost_per_pc', 'testing_cost_per_pc',
+            'profit_margin_percent'
         ];
 
         if (garmentType === 'tshirt') {
-            numericFields.push('gsm', 'body_length', 'sleeve_length', 'chest_width', 'wastage_percent',
+            numericFields.push('gsm', 'body_length', 'sleeve_length', 'chest_width',
+                'wastage_percent', 'fabric_allowance',
                 'yarn_price_per_kg', 'knitting_charge_per_kg', 'dyeing_charge_per_kg');
         } else if (garmentType === 'shirt') {
             numericFields.push('shirt_body_length', 'shirt_sleeve_length', 'shirt_chest_width',
-                'shirt_collar', 'fabric_width', 'shirt_wastage_percent', 'fabric_price_per_yard');
+                'shirt_collar', 'fabric_width', 'shirt_wastage_percent', 'shirt_fabric_allowance',
+                'fabric_price_per_yard');
         } else if (garmentType === 'jeans') {
             numericFields.push('waist', 'inseam', 'thigh_width', 'front_rise', 'back_rise',
-                'leg_opening', 'denim_fabric_width', 'jeans_wastage_percent', 'fabric_price_per_yard');
+                'leg_opening', 'denim_fabric_width', 'jeans_wastage_percent', 'jeans_fabric_allowance',
+                'fabric_price_per_yard');
         }
 
         // Convert string values to numbers and validate
@@ -194,6 +203,12 @@ const InputScreen = ({ navigation }) => {
                             <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.wastage_percent)} onChangeText={t => handleNumericChange('wastage_percent', t)} />
                         </View>
                     </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1 }}>
+                            <Text>Fabric Allowance (cm)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.fabric_allowance)} onChangeText={t => handleNumericChange('fabric_allowance', t)} />
+                        </View>
+                    </View>
 
                     <Text style={styles.sectionTitle}>Knit Fabric Costs (USD/kg)</Text>
                     <View style={styles.row}>
@@ -247,6 +262,12 @@ const InputScreen = ({ navigation }) => {
                             <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_wastage_percent)} onChangeText={t => handleNumericChange('shirt_wastage_percent', t)} />
                         </View>
                     </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1 }}>
+                            <Text>Fabric Allowance (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.shirt_fabric_allowance)} onChangeText={t => handleNumericChange('shirt_fabric_allowance', t)} />
+                        </View>
+                    </View>
 
                     <Text style={styles.sectionTitle}>Woven Fabric Cost</Text>
                     <Text>Fabric Price ($/Yard)</Text>
@@ -298,6 +319,12 @@ const InputScreen = ({ navigation }) => {
                             <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.jeans_wastage_percent)} onChangeText={t => handleNumericChange('jeans_wastage_percent', t)} />
                         </View>
                     </View>
+                    <View style={styles.row}>
+                        <View style={{ flex: 1 }}>
+                            <Text>Fabric Allowance (in)</Text>
+                            <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.jeans_fabric_allowance)} onChangeText={t => handleNumericChange('jeans_fabric_allowance', t)} />
+                        </View>
+                    </View>
 
                     <Text style={styles.sectionTitle}>Denim Fabric Cost</Text>
                     <Text>Fabric Price ($/Yard)</Text>
@@ -320,6 +347,22 @@ const InputScreen = ({ navigation }) => {
                     <View style={styles.col}>
                         <Text>CM Cost</Text>
                         <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.cm_cost_per_doz)} onChangeText={t => handleNumericChange('cm_cost_per_doz', t)} />
+                    </View>
+                </View>
+
+                <Text style={styles.sectionTitle}>FOB-Essential Costs (per Piece)</Text>
+                <View style={styles.row}>
+                    <View style={styles.col}>
+                        <Text>Washing/Finishing</Text>
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.washing_cost_per_pc)} onChangeText={t => handleNumericChange('washing_cost_per_pc', t)} />
+                    </View>
+                    <View style={styles.col}>
+                        <Text>Commercial/Export</Text>
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.commercial_cost_per_pc)} onChangeText={t => handleNumericChange('commercial_cost_per_pc', t)} />
+                    </View>
+                    <View style={styles.col}>
+                        <Text>Testing/Inspection</Text>
+                        <TextInput style={styles.input} keyboardType="decimal-pad" value={String(formData.testing_cost_per_pc)} onChangeText={t => handleNumericChange('testing_cost_per_pc', t)} />
                     </View>
                 </View>
             </View>
